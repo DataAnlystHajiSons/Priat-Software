@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ICR-1 & ICR-2 Details</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        /* Minimal CSS Styling */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 2000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+
+        .header {
+            background: #4285f4;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: normal;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        select, input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        select:focus, input:focus, textarea:focus {
+            outline: none;
+            border-color: #4285f4;
+        }
+
+        .btn {
+            background: #4285f4;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+
+        .btn:hover {
+            background: #3367d6;
+        }
+
+        .btn-success {
+            background: #34a853;
+        }
+
+        .btn-success:hover {
+            background: #2e8a4a;
+        }
+        
+        .btn-add { /* New style for Add button */
+            background: #fbbc05; /* Google Yellow */
+            color: #333;
+        }
+
+        .btn-add:hover {
+            background: #f7b400;
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .editable {
+            background-color: #fff3cd;
+        }
+
+        .message {
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        /* Styles for the Add Record form */
+        #addRecordForm {
+            border: 1px solid #e0e0e0;
+            padding: 20px;
+            border-radius: 8px;
+            background-color: #fdfdfd;
+            margin-top: 20px;
+        }
+        
+        #addRecordForm h3 {
+            margin-bottom: 15px;
+            color: #4285f4;
+        }
+        
+        #addRecordForm .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 10px;
+        }
+        
+        #addRecordForm .form-row .form-group-item {
+            flex: 1 1 calc(33% - 15px); /* Three items per row, adjust as needed */
+            min-width: 200px; /* Minimum width for each item */
+        }
+        
+        #addRecordForm .form-row .form-group-item label {
+            font-size: 13px;
+            margin-bottom: 5px;
+        }
+        
+        #addRecordForm .form-row .form-group-item input {
+            padding: 8px;
+            font-size: 13px;
+        }
+
+                /* Target the Supervisor header */
+        #icrTable th:nth-child(2),
+        #icrTable th:nth-child(3),
+        #icrTable th:nth-child(4),
+        #icrTable th:nth-child(5) {
+            width: 250px; /* Or use a percentage, e.g., 15% */
+            min-width: 200px; /* Ensure it's at least this wide */
+        }
+
+        /* Target the Supervisor cells */
+        #icrTable th:nth-child(2),
+        #icrTable th:nth-child(3),
+        #icrTable td:nth-child(4),
+        #icrTable th:nth-child(5) {
+            width: 250px; /* Match the header width */
+            min-width: 200px; /* Match the header min-width */
+        }
+
+        /* Optional: To make the input fields within these cells fill the cell width */
+        #icrTable td:nth-child(2) input, /* Targets input in 2nd column (Site Name) */
+        #icrTable td:nth-child(3) input,
+        #icrTable td:nth-child(4) input,
+        #icrTable td:nth-child(5) input  /* Targets input in 3rd column (Supervisor) */
+        {
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>ICR-1 & ICR-2 Details</h1>
+            <p>View and edit ICR-1 & ICR-2 Details by site</p>
+        </div>
+
+        <div id="successMessage" class="message success hidden"></div>
+        <div id="errorMessage" class="message error hidden"></div>
+
+        <div class="form-group">
+            <label for="siteSelect">Select Site:</label>
+            <select id="siteSelect">
+                <option value="">Choose a site...</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <button id="loadDataBtn" class="btn" onclick="loadIcrDetailsData()">Load Data</button>
+            <button id="addRecordBtn" class="btn btn-add" onclick="toggleAddRecordForm()">Add New Record</button>
+            <button id="editModeBtn" class="btn" onclick="toggleEditMode()">Enable Edit Mode</button>
+            <button id="saveChangesBtn" class="btn btn-success hidden" onclick="saveChanges()">Save Changes</button>
+            <button id="cancelEditBtn" class="btn hidden" onclick="cancelEdit()">Cancel</button>
+        </div>
+
+        <div id="addRecordForm" class="hidden">
+            <h3>Add New ICR's Record</h3>
+            <div class="form-row">
+                <div class="form-group-item">
+                    <label for="newSupervisor">Supervisor:</label>
+                    <input type="text" id="newSupervisor" placeholder="Enter supervisor name">
+                </div>
+                <div class="form-group-item">
+                    <label for="newSystemType">System Type:</label>
+                    <input type="text" id="newSystemType" placeholder="e.g., Solar, Drip">
+                </div>
+                <div class="form-group-item">
+                    <label for="newAcres">Acres:</label>
+                    <input type="number" id="newAcres" placeholder="e.g., 100.5">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group-item">
+                    <label for="newSolarIcr1SubDate">Solar ICR-1 Submission Date:</label>
+                    <input type="date" id="newSolarIcr1SubDate">
+                </div>
+                <div class="form-group-item">
+                    <label for="newDripIcr1SubDate">Drip ICR-1 Submission Date:</label>
+                    <input type="date" id="newDripIcr1SubDate">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group-item">
+                    <label for="newSolarIcr1RecDate">Solar ICR-1 Recovery Date:</label>
+                    <input type="date" id="newSolarIcr1RecDate">
+                </div>
+                <div class="form-group-item">
+                    <label for="newDripIcr1RecDate">Drip ICR-1 Recovery Date:</label>
+                    <input type="date" id="newDripIcr1RecDate">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group-item">
+                    <label for="newSolarIcr2SubDate">Solar ICR-2 Submission Date:</label>
+                    <input type="date" id="newSolarIcr2SubDate">
+                </div>
+                <div class="form-group-item">
+                    <label for="newDripIcr2SubDate">Drip ICR-2 Submission Date:</label>
+                    <input type="date" id="newDripIcr2SubDate">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group-item">
+                    <label for="newSolarIcr2RecDate">Solar ICR-2 Recovery Date:</label>
+                    <input type="date" id="newSolarIcr2RecDate">
+                </div>
+                <div class="form-group-item">
+                    <label for="newDripIcr2RecDate">Drip ICR-2 Recovery Date:</label>
+                    <input type="date" id="newDripIcr2RecDate">
+                </div>
+            </div>
+            <div class="form-group">
+                <button id="submitNewRecordBtn" class="btn btn-success" onclick="addNewRecord()">Add Record</button>
+                <button id="cancelAddRecordBtn" class="btn" onclick="toggleAddRecordForm()">Cancel</button>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <div id="noDataMessage" class="no-data hidden">
+                <p>No site completion entries found for the selected site.</p>
+                <button class="btn btn-add" onclick="toggleAddRecordForm()">Add the first record for this site</button>
+            </div>
+            <table id="icrTable" class="hidden">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Site Name</th>
+                        <th>Supervisor</th>
+                        <th>System Type</th>
+                        <th>Acres</th>
+                        <th>solar ICR-1 Submission Date</th>
+                        <th>Drip ICR-1 Submission Date</th>
+                        <th>solar ICR-1 Recovery Date</th>
+                        <th>Drip ICR-1 Recovery Date</th>
+                        <th>Solar ICR-2 Submission Date</th>
+                        <th>Drip ICR-2 Submission Date</th>
+                        <th>Solar ICR-2 Recovery Date</th>
+                        <th>Drip icr-2 Recovery Date</th>
+                    </tr>
+                </thead>
+                <tbody id="icrTableBody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        console.log("Script block is executing.");
+        // Global variables
+        let supabase = null;
+        let siteNames = [];
+        let siteDetailsMap = {}; // NEW: To store site_name -> site_id mapping
+        let icrData = [];
+        let originalData = [];
+        let isEditMode = false;
+        let isAddingRecord = false; // New state variable
+
+        // Supabase configuration
+        const SUPABASE_URL = 'https://mxktarizsqttwwzbqgld.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im14a3Rhcml6c3F0dHd3emJxZ2xkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI2NDA3MTMsImV4cCI6MjA2ODIxNjcxM30.UKA9NjB8mlxYJjzaC0cMnPGREcEAf-NQ3AeRWNWeuP8';
+
+        // Initialize Supabase client safely
+        function initializeSupabase() {
+            console.log("Attempting to initialize Supabase...");
+            try {
+                if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+                    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                    console.log('Supabase client initialized successfully');
+                    return true;
+                } else {
+                    console.error('Supabase library not loaded properly');
+                    return false;
+                }
+            } catch (error) {
+                console.error('Error initializing Supabase:', error);
+                return false;
+            }
+        }
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', async function() {
+            let retryCount = 0;
+            const maxRetries = 10;
+            
+            const initSupabase = () => {
+                if (initializeSupabase()) {
+                    initializeApp();
+                } else if (retryCount < maxRetries) {
+                    retryCount++;
+                    console.log(`Retrying Supabase initialization... (${retryCount}/${maxRetries})`);
+                    setTimeout(initSupabase, 500);
+                } else {
+                    console.error('Failed to initialize Supabase after maximum retries');
+                    showErrorMessage('Failed to initialize database connection. Please refresh the page.');
+                }
+            };
+            
+            initSupabase();
+        });
+
+        async function initializeApp() {
+            console.log("initializeApp called");
+            try {
+                await fetchSiteNames();
+                setupEventListeners();
+                // Initially disable Add Record button until a site is selected
+                document.getElementById('addRecordBtn').disabled = true;
+            } catch (error) {
+                console.error('Error initializing app:', error);
+                showErrorMessage('Error initializing application. Please refresh the page.');
+            }
+        }
+
+        // Fetch site names and IDs from the database
+        async function fetchSiteNames() {
+            if (!supabase) {
+                showErrorMessage('Database connection not available.');
+                return;
+            }
+
+            try {
+                // Fetch both site_name AND id from site_details
+                const { data, error } = await supabase
+                    .from("site_details")
+                    .select("site_name, id") // <-- MODIFIED: Select 'id' as well
+                    .order("site_name");
+
+                console.log("Supabase site_details data:", data);
+                console.log("Supabase site_details error:", error);
+
+                if (error) {
+                    console.error('Error fetching site names:', error);
+                    showErrorMessage('Failed to load site names.');
+                    return;
+                }
+
+                if (data && Array.isArray(data)) {
+                    siteNames = []; // Clear previous siteNames
+                    siteDetailsMap = {}; // Clear previous map
+                    data.forEach(row => {
+                        if (row.site_name) { // Ensure site_name exists
+                            siteNames.push(row.site_name);
+                            siteDetailsMap[row.site_name] = row.id; // Store the ID for easy lookup
+                        }
+                    });
+                    populateSiteDropdown();
+                } else {
+                    siteNames = [];
+                    siteDetailsMap = {};
+                    showErrorMessage('No sites found in the database.');
+                }
+            } catch (err) {
+                console.error('Exception fetching site names:', err);
+                showErrorMessage('An error occurred while fetching site names.');
+            }
+        }
+
+        // Populate the site dropdown
+        function populateSiteDropdown() {
+            const siteSelect = document.getElementById('siteSelect');
+            siteSelect.innerHTML = '<option value="">Choose a site...</option>';
+            
+            // Now siteNames array only contains the names
+            siteNames.forEach(siteName => {
+                const option = document.createElement('option');
+                option.value = siteName;
+                option.textContent = siteName;
+                siteSelect.appendChild(option);
+            });
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            document.getElementById('siteSelect').addEventListener('change', function() {
+                const selectedSite = this.value;
+                if (selectedSite) {
+                    document.getElementById('loadDataBtn').disabled = false;
+                    document.getElementById('addRecordBtn').disabled = false; // Enable add button
+                } else {
+                    document.getElementById('loadDataBtn').disabled = true;
+                    document.getElementById('addRecordBtn').disabled = true; // Disable add button
+                    hideTable();
+                    // If no site is selected, hide the add record form
+                    document.getElementById('addRecordForm').classList.add('hidden');
+                    isAddingRecord = false;
+                    // Reset Add New Record button text and style
+                    document.getElementById('addRecordBtn').textContent = 'Add New Record';
+                    document.getElementById('addRecordBtn').classList.add('btn-add');
+                }
+                // If the selected site changes, hide the add form in case it was open
+                document.getElementById('addRecordForm').classList.add('hidden');
+                isAddingRecord = false;
+            });
+        }
+
+        // Load site completion data for selected site
+        async function loadIcrDetailsData() {
+            const selectedSite = document.getElementById('siteSelect').value;
+            if (!selectedSite) {
+                showErrorMessage('Please select a site first.');
+                return;
+            }
+
+            if (!supabase) {
+                showErrorMessage('Database connection not available.');
+                return;
+            }
+
+            try {
+                showLoading(true);
+                hideMessages();
+                document.getElementById('addRecordForm').classList.add('hidden'); // Hide add form when loading existing data
+                isAddingRecord = false;
+                // Reset Add New Record button text and style
+                document.getElementById('addRecordBtn').textContent = 'Add New Record';
+                document.getElementById('addRecordBtn').classList.add('btn-add');
+
+
+                const { data, error } = await supabase
+                    .from("icr_1_and_icr_2")
+                    .select("*")
+                    .eq("site_name", selectedSite) // <-- Corrected column name as per previous fix
+                    .order("id", { ascending: false });
+
+                console.log("Fetched site completion data:", data);
+                console.log("Fetch error:", error);
+
+                if (error) {
+                    console.error('Error fetching site completion data:', error);
+                    showErrorMessage('Failed to load site completion data. Details in console.');
+                    return;
+                }
+
+                icrData = data || [];
+                originalData = JSON.parse(JSON.stringify(icrData)); // Deep copy
+                populateTable();
+                
+                if (icrData.length === 0) {
+                    showNoDataMessage();
+                } else {
+                    showSuccessMessage(`Loaded ${icrData.length} Site Completion entries for ${selectedSite}.`);
+                }
+
+            } catch (err) {
+                console.error('Exception loading site Completion data:', err);
+                showErrorMessage('An error occurred while loading site completion data.');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Populate the site Completion table
+        function populateTable() {
+            const tableBody = document.getElementById("icrTableBody");
+            const table = document.getElementById("icrTable");
+            const noDataDiv = document.getElementById("noDataMessage");
+
+            tableBody.innerHTML = ""; // Clear existing rows
+
+            if (icrData.length === 0) {
+                table.classList.add("hidden");
+                noDataDiv.classList.remove("hidden");
+                return;
+            }
+
+            table.classList.remove("hidden");
+            noDataDiv.classList.add("hidden");
+
+            // Helper to format date strings for input type="date"
+            const formatDateForInput = (dateString) => {
+                if (!dateString) return ''; // Handle null or empty dates
+                const date = new Date(dateString);
+                if (isNaN(date.getTime())) return ''; // Handle invalid dates
+                return date.toISOString().split('T')[0]; // Format to YYYY-MM-DD
+            };
+
+            icrData.forEach((row, index) => {
+                const tr = document.createElement("tr");
+
+                const htmlString = `
+                    <td>${row.id}</td>
+                    <td><input type="text" value="${row.site_name || ''}" data-field="site_name" data-index="${index}" readonly></td>
+                    <td><input type="text" value="${row.supervisor || ''}" data-field="supervisor" data-index="${index}" ${isEditMode ? '' : 'readonly'}></td>
+                    <td><input type="text" value="${row.system_type || ''}" data-field="system_type" data-index="${index}" ${isEditMode ? '' : 'readonly'}></td>
+                    <td><input type="number" value="${row.acres || ''}" data-field="acres" data-index="${index}" ${isEditMode ? '' : 'readonly'}></td>
+                    <td><input type="date" value="${formatDateForInput(row.newSolarIcr1SubDate)}" data-field="newSolarIcr1SubDate" data-index="${index}" ${isEditMode ? '' : 'readonly'}></td>
+                    <td><input type="date" value="${formatDateForInput(row.newDripIcr1SubDate)}" data-field="newDripIcr1SubDate" data-index="${index}" ${isEditMode ? '' : 'readonly'}></td>
+
+                    <td><input type="date" value="${formatDateForInput(row.newSolarIcr1RecDate)}" data-field="newSolarIcr1RecDate" data-index="${index}" ${isEditMode ? '' : 'readonly'}></td>
+                    <td><input type="date" value="${formatDateForInput(row.newDripIcr1RecDate)}" data-field="newDripIcr1RecDate" data-index="${index}" ${isEditMode ? '' : 'readonly'}></td>
+
+                    <td><input type="date" value="${formatDateForInput(row.newSolarIcr2SubDate)}" data-field="newSolarIcr2SubDate" data-index="${index}" ${isEditMode ? '' : 'readonly'}></td>
+                    <td><input type="date" value="${formatDateForInput(row.newDripIcr2SubDate)}" data-field="newDripIcr2SubDate" data-index="${index}" ${isEditMode ? '' : 'readonly'}></td>
+
+                    <td><input type="date" value="${formatDateForInput(row.newSolarIcr2RecDate)}" data-field="newSolarIcr2RecDate" data-index="${index}" ${isEditMode ? '' : 'readonly'}></td>
+                    <td><input type="date" value="${formatDateForInput(row.newDripIcr2RecDate)}" data-field="newDripIcr2RecDate" data-index="${index}" ${isEditMode ? '' : 'readonly'}></td>
+
+                
+                `;
+
+                tr.innerHTML = htmlString;
+                tableBody.appendChild(tr);
+            });
+            // Re-apply editable class if already in edit mode (important when repopulating after save/cancel)
+            if (isEditMode) {
+                document.querySelectorAll('#icrTableBody input:not([readonly]), #icrTableBody textarea:not([readonly])').forEach(input => {
+                    input.classList.add('editable');
+                });
+            }
+        }
+
+        // Helper functions for messages and loading states
+        function showSuccessMessage(message) {
+            const successMessage = document.getElementById('successMessage');
+            successMessage.textContent = message;
+            successMessage.classList.remove('hidden');
+            setTimeout(() => successMessage.classList.add('hidden'), 5000);
+        }
+
+        function showErrorMessage(message) {
+            const errorMessage = document.getElementById('errorMessage');
+            errorMessage.textContent = message;
+            errorMessage.classList.remove('hidden');
+            setTimeout(() => errorMessage.classList.add('hidden'), 5000);
+        }
+
+        function hideMessages() {
+            document.getElementById('successMessage').classList.add('hidden');
+            document.getElementById('errorMessage').classList.add('hidden');
+        }
+
+        function showLoading(isLoading) {
+            const loadDataBtn = document.getElementById('loadDataBtn');
+            const siteSelect = document.getElementById('siteSelect');
+            const addRecordBtn = document.getElementById('addRecordBtn');
+            const editModeBtn = document.getElementById('editModeBtn');
+            const saveChangesBtn = document.getElementById('saveChangesBtn');
+            const cancelEditBtn = document.getElementById('cancelEditBtn');
+            const submitNewRecordBtn = document.getElementById('submitNewRecordBtn');
+            const cancelAddRecordBtn = document.getElementById('cancelAddRecordBtn');
+
+            if (isLoading) {
+                loadDataBtn.textContent = 'Loading...';
+                document.body.classList.add('loading'); // Add a class to body to dim/disable everything
+            } else {
+                loadDataBtn.textContent = 'Load Data';
+                document.body.classList.remove('loading');
+            }
+            // Always set disabled state based on 'isLoading'
+            loadDataBtn.disabled = isLoading;
+            siteSelect.disabled = isLoading;
+            addRecordBtn.disabled = isLoading || !document.getElementById('siteSelect').value || isEditMode; // Disable if no site, loading, or in edit mode
+            editModeBtn.disabled = isLoading || isAddingRecord; // Disable if loading or adding record
+            saveChangesBtn.disabled = isLoading;
+            cancelEditBtn.disabled = isLoading;
+            submitNewRecordBtn.disabled = isLoading;
+            cancelAddRecordBtn.disabled = isLoading;
+        }
+
+        function hideTable() {
+            document.getElementById('icrTable').classList.add('hidden');
+            document.getElementById('noDataMessage').classList.remove('hidden');
+        }
+
+        function showNoDataMessage() {
+            document.getElementById('icrTable').classList.add('hidden');
+            document.getElementById('noDataMessage').classList.remove('hidden');
+        }
+
+        // Edit Mode functions
+        function toggleEditMode() {
+            isEditMode = !isEditMode;
+            const editModeBtn = document.getElementById('editModeBtn');
+            const saveChangesBtn = document.getElementById('saveChangesBtn');
+            const cancelEditBtn = document.getElementById('cancelEditBtn');
+            const addRecordBtn = document.getElementById('addRecordBtn');
+            const loadDataBtn = document.getElementById('loadDataBtn');
+
+            // Hide add record form if entering edit mode
+            if (isEditMode) {
+                document.getElementById('addRecordForm').classList.add('hidden');
+                isAddingRecord = false; // Ensure add state is false
+                 // Reset Add New Record button text and style
+                addRecordBtn.textContent = 'Add New Record';
+                addRecordBtn.classList.add('btn-add');
+            }
+
+            if (isEditMode) {
+                editModeBtn.textContent = 'Disable Edit Mode';
+                saveChangesBtn.classList.remove('hidden');
+                cancelEditBtn.classList.remove('hidden');
+                addRecordBtn.disabled = true; // Disable Add button in edit mode
+                loadDataBtn.disabled = true; // Disable Load Data button in edit mode
+            } else {
+                editModeBtn.textContent = 'Enable Edit Mode';
+                saveChangesBtn.classList.add('hidden');
+                cancelEditBtn.classList.add('hidden');
+                addRecordBtn.disabled = !document.getElementById('siteSelect').value; // Re-enable if site selected
+                loadDataBtn.disabled = false; // Re-enable Load Data button
+            }
+
+            const inputs = document.querySelectorAll('#icrTableBody input, #icrTableBody textarea');
+            inputs.forEach(input => {
+                const field = input.dataset.field;
+                // Prevent editing ID and Site Name when in edit mode
+                if (field !== 'id' && field !== 'site_name') { 
+                    input.readOnly = !isEditMode;
+                    if (isEditMode) {
+                        input.classList.add('editable');
+                    } else {
+                        input.classList.remove('editable');
+                    }
+                }
+            });
+        }
+
+        async function saveChanges() {
+            if (!supabase) {
+                showErrorMessage('Database connection not available.');
+                return;
+            }
+
+            showLoading(true);
+            hideMessages();
+
+            const updates = [];
+            const inputs = document.querySelectorAll('#icrTableBody input, #icrTableBody textarea');
+
+            inputs.forEach(input => {
+                const index = parseInt(input.dataset.index);
+                const field = input.dataset.field;
+                const newValue = input.value;
+
+                // Important: Handle date inputs. If they are empty, store as null.
+                // Supabase expects ISO string for dates, but an empty string for a date input should be null.
+                const valueToCompare = (input.type === 'date' && newValue === '') ? null : newValue;
+                // For comparison, get the original value. Convert undefined/null dates to empty string for consistent comparison with input.value
+                const originalValue = originalData[index]?.[field];
+                const originalValueToCompare = (input.type === 'date' && !originalValue) ? null : originalValue;
+
+
+                // Only add to updates if the value has actually changed AND it's not the site_name or id field (which are readonly)
+                if (field !== 'id' && field !== 'site_name' && String(valueToCompare) !== String(originalValueToCompare)) {
+                    if (!updates[index]) {
+                        updates[index] = { id: icrData[index].id };
+                    }
+                    // For date fields, convert empty strings to null for Supabase
+                    updates[index][field] = (input.type === 'date' && newValue === '') ? null : newValue;
+                }
+            });
+
+            const filteredUpdates = updates.filter(update => update && Object.keys(update).length > 1);
+
+            if (filteredUpdates.length === 0) {
+                showSuccessMessage('No changes to save.');
+                showLoading(false);
+                return;
+            }
+
+            try {
+                for (const update of filteredUpdates) {
+                    const { data, error } = await supabase
+                        .from('icr_1_and_icr_2')
+                        .update(update)
+                        .eq('id', update.id);
+
+                    if (error) {
+                        console.error('Error updating record:', error);
+                        throw new Error(`Failed to update record with ID ${update.id}: ${error.message}`);
+                    }
+                }
+                showSuccessMessage(`Successfully saved ${filteredUpdates.length} changes.`);
+                await loadIcrDetailsData();
+            } catch (err) {
+                console.error('Exception saving changes:', err);
+                showErrorMessage(`Error saving changes: ${err.message}`);
+            } finally {
+                showLoading(false);
+                toggleEditMode(); // Exit edit mode after saving
+            }
+        }
+
+        function cancelEdit() {
+            icrData = JSON.parse(JSON.stringify(originalData));
+            populateTable(); 
+            toggleEditMode(); 
+            showSuccessMessage('Changes cancelled.');
+        }
+
+        // --- NEW FUNCTIONS FOR ADD RECORD ---
+
+        function toggleAddRecordForm() {
+            const addRecordForm = document.getElementById('addRecordForm');
+            const selectedSite = document.getElementById('siteSelect').value;
+            const addRecordBtn = document.getElementById('addRecordBtn');
+            const editModeBtn = document.getElementById('editModeBtn');
+            const loadDataBtn = document.getElementById('loadDataBtn');
+            const saveChangesBtn = document.getElementById('saveChangesBtn');
+            const cancelEditBtn = document.getElementById('cancelEditBtn');
+
+            if (!selectedSite) {
+                showErrorMessage('Please select a site before adding a new record.');
+                return;
+            }
+
+            isAddingRecord = !isAddingRecord; // Toggle the state
+
+            if (isAddingRecord) {
+                addRecordForm.classList.remove('hidden');
+                clearNewRecordForm(); // Clear fields when opening
+                
+                // Disable other action buttons while adding a record
+                loadDataBtn.disabled = true;
+                editModeBtn.disabled = true;
+                saveChangesBtn.classList.add('hidden'); // Ensure save/cancel are hidden
+                cancelEditBtn.classList.add('hidden');
+                addRecordBtn.textContent = 'Cancel Add';
+                addRecordBtn.classList.remove('btn-add'); // Remove yellow style for cancel
+            } else {
+                addRecordForm.classList.add('hidden');
+                // Re-enable other action buttons
+                loadDataBtn.disabled = false;
+                editModeBtn.disabled = false;
+                addRecordBtn.textContent = 'Add New Record';
+                addRecordBtn.classList.add('btn-add'); // Re-add yellow style
+            }
+            hideMessages(); // Clear any existing messages
+            showLoading(false); // Re-evaluate button states
+        }
+
+        async function addNewRecord() {
+            const selectedSite = document.getElementById('siteSelect').value;
+            if (!selectedSite) {
+                showErrorMessage('No site is selected. Please select a site first.');
+                return;
+            }
+
+            // Get the site_id using the selectedSite name from the map
+            const selectedSiteId = siteDetailsMap[selectedSite];
+            if (selectedSiteId === undefined || selectedSiteId === null) { // Check for undefined or null
+                showErrorMessage('Could not find site ID for the selected site. Please ensure the site exists and has an ID.');
+                showLoading(false);
+                return;
+            }
+
+            if (!supabase) {
+                showErrorMessage('Database connection not available.');
+                return;
+            }
+
+            showLoading(true);
+            hideMessages();
+
+            // Get values from the new record form fields
+            const newRecord = {
+                site_name: selectedSite, // Automatically set based on selected site
+                site_id: selectedSiteId, // <-- NEW: Add the site_id here
+                supervisor: document.getElementById('newSupervisor').value,
+                system_type: document.getElementById('newSystemType').value,
+                acres: parseFloat(document.getElementById('newAcres').value) || null, // Convert to number, or null if empty
+                
+                solar_icr_1_submission: document.getElementById('newSolarIcr1SubDate').value || null,
+                drip_icr_1_submission: document.getElementById('newDripIcr1SubDate').value || null,
+
+                solar_icr_1_recovery: document.getElementById('newSolarIcr1RecDate').value || null,
+                drip_icr_1_recovery: document.getElementById('newDripIcr1RecDate').value || null,
+
+                solar_icr_2_submission: document.getElementById('newSolarIcr2SubDate').value || null,
+                drip_icr_2_submission: document.getElementById('newDripIcr2SubDate').value || null,
+
+                solar_icr_2_recovery: document.getElementById('newSolarIcr2RecDate').value || null,
+                drip_icr_2_recovery: document.getElementById('newDripIcr2RecDate').value || null,
+
+
+            };
+
+            // Basic validation (can be expanded)
+            if (!newRecord.supervisor || !newRecord.system_type) {
+                showErrorMessage('Supervisor and System Type are required fields.');
+                showLoading(false);
+                return;
+            }
+
+            try {
+                const { data, error } = await supabase
+                    .from('icr_1_and_icr_2')
+                    .insert([newRecord]) // Insert takes an array of objects
+                    .select(); // Add .select() to get the newly inserted row, including its generated ID
+
+                if (error) {
+                    console.error('Error adding new record:', error);
+                    showErrorMessage(`Failed to add new record: ${error.message}`);
+                    return;
+                }
+
+                showSuccessMessage('New record added successfully!');
+                clearNewRecordForm(); // Clear the form after successful submission
+                toggleAddRecordForm(); // Hide the add form and reset button states
+                await loadIcrDetailsData(); // Re-load data to show the new record
+            } catch (err) {
+                console.error('Exception adding new record:', err);
+                showErrorMessage('An error occurred while adding the new record.');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function clearNewRecordForm() {
+            document.getElementById('newSupervisor').value = '';
+            document.getElementById('newSystemType').value = '';
+            document.getElementById('newAcres').value = '';
+            document.getElementById('newSolarIcr1SubDate').value = '';
+            document.getElementById('newDripIcr1SubDate').value = '';
+            document.getElementById('newSolarIcr1RecDate').value = '';
+            document.getElementById('newDripIcr1RecDate').value = '';
+            document.getElementById('newSolarIcr2SubDate').value = '';
+            document.getElementById('newDripIcr2SubDate').value = '';
+            document.getElementById('newSolarIcr2RecDate').value = '';
+            document.getElementById('newDripIcr2RecDate').value = '';
+
+        }
+
+    </script>
+</body>
+</html>

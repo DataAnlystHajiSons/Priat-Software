@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Budget Entry</title>
+</head>
+<body>
+    <h2>Budget Entry</h2>
+
+    <label for="siteSelect">Select Site:</label>
+    <select id="siteSelect"></select>
+    <button onclick="loadBudget()">Load Budget</button>
+
+    <br><br>
+
+    <table id="budgetTable" border="1">
+        <thead>
+            <tr>
+                <th>Item Type</th>
+                <th>BOQ Item</th>
+                <th>Description</th>
+                <th>Standards</th>
+                <th>Specifications</th>
+                <th>Unit</th>
+                <th>Qty</th>
+                <th>Unit Rate</th>
+                <th>Cost</th>
+                <th>GST Rate</th>
+                <th>GST</th>
+                <th>Total</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <br>
+    <button onclick="addRow()">Add Row</button>
+    <button onclick="saveBudget()">Save Changes</button>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+
+        const supabaseUrl = 'https://mxktarizsqttwwzbqgld.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im14a3Rhcml6c3F0dHd3emJxZ2xkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI2NDA3MTMsImV4cCI6MjA2ODIxNjcxM30.UKA9NjB8mlxYJjzaC0cMnPGREcEAf-NQ3AeRWNWeuP8';
+        const supabase = createClient(supabaseUrl, supabaseKey);
+
+        const siteSelect = document.getElementById('siteSelect');
+        const tableBody = document.querySelector('#budgetTable tbody');
+
+        let selectedSiteId = null;
+
+        async function fetchSites() {
+            const { data, error } = await supabase.from('site_details').select('id, site_name');
+            if (error) {
+                console.error('Error loading sites:', error);
+                return;
+            }
+
+            siteSelect.innerHTML = data.map(site =>
+                `<option value="${site.id}">${site.site_name}</option>`
+            ).join('');
+        }
+
+        async function loadBudget() {
+            selectedSiteId = siteSelect.value;
+            const { data, error } = await supabase
+                .from('budget_details')
+                .select('*')
+                .eq('site_id', selectedSiteId);
+
+            if (error) {
+                console.error('Error loading budget:', error);
+                return;
+            }
+
+            tableBody.innerHTML = '';
+            data.forEach(row => appendRow(row));
+        }
+
+        function addRow() {
+            const empty = {
+                item_type: '',
+                boq_item_id: '', // You’ll need to integrate BOQ items dropdown later
+                item_description: '',
+                standards: '',
+                specifications: '',
+                unit: '',
+                qty: '',
+                unit_rate: '',
+                cost: '',
+                gst_rate: '',
+                gst: '',
+                total: '',
+                status: 'Pending'
+            };
+            appendRow(empty);
+        }
+
+        function appendRow(row) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><input value="${row.item_type || ''}"/></td>
+                <td><input value="${row.boq_item_id || ''}"/></td>
+                <td><input value="${row.item_description || ''}"/></td>
+                <td><input value="${row.standards || ''}"/></td>
+                <td><input value="${row.specifications || ''}"/></td>
+                <td><input value="${row.unit || ''}"/></td>
+                <td><input type="number" value="${row.qty || ''}"/></td>
+                <td><input type="number" value="${row.unit_rate || ''}"/></td>
+                <td><input type="number" value="${row.cost || ''}"/></td>
+                <td><input type="number" value="${row.gst_rate || ''}"/></td>
+                <td><input type="number" value="${row.gst || ''}"/></td>
+                <td><input type="number" value="${row.total || ''}"/></td>
+                <td>
+                    <select>
+                        <option ${row.status === 'Pending' ? 'selected' : ''}>Pending</option>
+                        <option ${row.status === 'Approved' ? 'selected' : ''}>Approved</option>
+                    </select>
+                </td>
+                <td><button onclick="this.closest('tr').remove()">Delete</button></td>
+            `;
+            tableBody.appendChild(tr);
+        }
+
+        async function saveBudget() {
+            const rows = Array.from(tableBody.querySelectorAll('tr'));
+            const updates = [];
+
+            for (const row of rows) {
+                const cells = row.querySelectorAll('input, select');
+                updates.push({
+                    site_id: selectedSiteId,
+                    item_type: cells[0].value,
+                    boq_item_id: cells[1].value || null,
+                    item_description: cells[2].value,
+                    standards: cells[3].value,
+                    specifications: cells[4].value,
+                    unit: cells[5].value,
+                    qty: Number(cells[6].value),
+                    unit_rate: Number(cells[7].value),
+                    cost: Number(cells[8].value),
+                    gst_rate: Number(cells[9].value),
+                    gst: Number(cells[10].value),
+                    total: Number(cells[11].value),
+                    status: cells[12].value
+                });
+            }
+
+            const { data, error } = await supabase
+                .from('budget_details')
+                .upsert(updates);
+
+            if (error) {
+                console.error('Error saving budget:', error);
+                alert('Failed to save!');
+            } else {
+                alert('Budget saved successfully.');
+                loadBudget();
+            }
+        }
+
+        // Initial site fetch
+        fetchSites();
+        window.loadBudget = loadBudget;
+        window.addRow = addRow;
+        window.saveBudget = saveBudget;
+    </script>
+</body>
+</html>

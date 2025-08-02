@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>View Sites</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+</head>
+<body class="view-site-page">
+  <h1>View Site Details</h1>
+
+  <label for="siteSelect">Select Site:</label>
+  <select id="siteSelect">
+    <option value="">-- Select a Site --</option>
+  </select>
+
+  <div id="siteDetails" style="margin-top: 20px;"></div>
+  <div style="margin-top: 10px;">
+    <button id="saveChangesBtn" style="display:none;">💾 Save Changes</button>
+  </div>
+
+  <script>
+    const { createClient } = supabase;
+
+    const supabaseClient = createClient(
+      'https://mxktarizsqttwwzbqgld.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im14a3Rhcml6c3F0dHd3emJxZ2xkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI2NDA3MTMsImV4cCI6MjA2ODIxNjcxM30.UKA9NjB8mlxYJjzaC0cMnPGREcEAf-NQ3AeRWNWeuP8'
+    );
+
+    const siteSelect = document.getElementById('siteSelect');
+    const siteDetailsDiv = document.getElementById('siteDetails');
+    const saveBtn = document.getElementById('saveChangesBtn');
+
+    let currentData = {};
+    let originalId = null;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const { data, error } = await supabaseClient
+        .from('site_details')
+        .select('id, site_name')
+        .order('site_name', { ascending: true });
+
+      if (error) {
+        alert('Error loading sites: ' + error.message);
+        return;
+      }
+
+      data.forEach(site => {
+        const option = document.createElement('option');
+        option.value = site.id;
+        option.textContent = site.site_name;
+        siteSelect.appendChild(option);
+      });
+    });
+
+    siteSelect.addEventListener('change', async (e) => {
+      const siteId = e.target.value;
+      siteDetailsDiv.innerHTML = '';
+      saveBtn.style.display = 'none';
+      currentData = {};
+      originalId = null;
+
+      if (!siteId) return;
+
+      const { data, error } = await supabaseClient
+        .from('site_details')
+        .select('*')
+        .eq('id', siteId)
+        .single();
+
+      if (error) {
+        siteDetailsDiv.innerHTML = '<p style="color:red">Error fetching site details.</p>';
+        return;
+      }
+
+      originalId = data.id;
+      currentData = { ...data };
+
+      const table = document.createElement('table');
+      table.border = '1';
+      table.cellPadding = '8';
+      table.className = 'site-details-table';
+
+      const headerRow = document.createElement('tr');
+      const valueRow = document.createElement('tr');
+
+      Object.keys(data).forEach(key => {
+        const th = document.createElement('th');
+        th.textContent = key.replace(/_/g, ' ').toUpperCase();
+        headerRow.appendChild(th);
+
+        let td;
+        if (key !== 'id' && (key.endsWith('_date') || key === 'date')) {
+          // Date field: use input type="date"
+          td = document.createElement('td');
+          td.dataset.key = key;
+          const dateInput = document.createElement('input');
+          dateInput.type = 'date';
+          dateInput.value = data[key] ? data[key].slice(0, 10) : ''; // YYYY-MM-DD
+          dateInput.addEventListener('input', () => {
+            saveBtn.style.display = 'inline-block';
+          });
+          td.appendChild(dateInput);
+        } else {
+          // Other fields
+          td = document.createElement('td');
+          td.contentEditable = key !== 'id';
+          td.textContent = data[key] ?? '-';
+          td.dataset.key = key;
+          td.addEventListener('input', () => {
+            saveBtn.style.display = 'inline-block';
+          });
+        }
+        valueRow.appendChild(td);
+      });
+
+      table.appendChild(headerRow);
+      table.appendChild(valueRow);
+
+      const container = document.createElement('div');
+      container.className = 'site-details-container';
+      container.appendChild(table);
+
+      siteDetailsDiv.appendChild(container);
+    });
+
+    saveBtn.addEventListener('click', async () => {
+      const cells = document.querySelectorAll('td[data-key]');
+      let updates = {};
+
+      cells.forEach(cell => {
+        const key = cell.dataset.key;
+        if (key !== 'id') {
+          let value;
+          if (cell.querySelector('input[type="date"]')) {
+            // Date field
+            value = cell.querySelector('input[type="date"]').value;
+            value = value === '' ? null : value;
+          } else {
+            value = cell.textContent.trim();
+            if (value === '-' || value === '') {
+              value = null;
+            } else if (!isNaN(value) && value !== null && value !== '') {
+              value = Number(value);
+            }
+          }
+          updates[key] = value;
+        }
+      });
+
+      const { error } = await supabaseClient
+        .from('site_details')
+        .update(updates)
+        .eq('id', originalId);
+
+      if (error) {
+        alert('❌ Error updating data: ' + error.message);
+      } else {
+        alert('✅ Changes saved successfully!');
+        saveBtn.style.display = 'none';
+      }
+    });
+  </script>
+</body>
+</html>

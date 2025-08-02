@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentation</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .doc-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        .site-select {
+            padding: 8px 16px;
+            font-size: 16px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+        }
+        .upload-btn {
+            background: #1976d2;
+            color: #fff;
+            border: none;
+            padding: 10px 22px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+        .upload-btn:hover {
+            background: #1565c0;
+        }
+        .docs-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 16px;
+            background: #fff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .docs-table th, .docs-table td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #eaeaea;
+            text-align: left;
+            font-size: 15px;
+        }
+        .docs-table th {
+            background: #f5f7fa;
+            font-weight: 600;
+            color: #333;
+        }
+        .docs-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+        .docs-table a {
+            color: #1976d2;
+            text-decoration: underline;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0; top: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.3);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: #fff;
+            padding: 32px 24px;
+            border-radius: 10px;
+            min-width: 320px;
+            box-shadow: 0 2px 16px rgba(0,0,0,0.12);
+        }
+        .modal-content h3 {
+            margin-top: 0;
+        }
+        .modal-content label {
+            display: block;
+            margin: 18px 0 6px 0;
+            font-weight: 500;
+        }
+        .modal-content input[type="file"] {
+            margin-bottom: 12px;
+        }
+        .modal-actions {
+            margin-top: 18px;
+            text-align: right;
+        }
+        .modal-actions button {
+            margin-left: 8px;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <script>
+    const supabase = window.supabase.createClient(
+      'https://mxktarizsqttwwzbqgld.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im14a3Rhcml6c3F0dHd3emJxZ2xkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI2NDA3MTMsImV4cCI6MjA2ODIxNjcxM30.UKA9NjB8mlxYJjzaC0cMnPGREcEAf-NQ3AeRWNWeuP8'
+    );
+
+    let selectedSiteId = null;
+
+    async function loadSites() {
+        const { data: sites, error } = await supabase.from('site_details').select('id, site_name');
+        if (error || !sites) return;
+        const select = document.getElementById('site-select');
+        select.innerHTML = '<option value="">Select Site</option>' +
+            sites.map(site => `<option value="${site.id}">${site.site_name}</option>`).join('');
+    }
+
+    async function loadDocuments(siteId) {
+        const tbody = document.querySelector('#docs-table tbody');
+        tbody.innerHTML = '';
+        if (!siteId) return;
+        const { data: docs, error } = await supabase
+            .from('documentation')
+            .select('*')
+            .eq('site_id', siteId);
+        if (error || !docs || docs.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5">No documents uploaded for this site.</td></tr>';
+            return;
+        }
+        docs.forEach(doc => {
+            tbody.innerHTML += `
+                <tr>
+                    <td>${new Date(doc.timestamp).toLocaleString()}</td>
+                    <td>${doc.boq_url ? `<a href="${doc.boq_url}" target="_blank">BOQ</a>` : '-'}</td>
+                    <td>${doc.work_order_url ? `<a href="${doc.work_order_url}" target="_blank">Work Order</a>` : '-'}</td>
+                    <td>${doc.icr_1_url ? `<a href="${doc.icr_1_url}" target="_blank">ICR-1</a>` : '-'}</td>
+                    <td>${doc.icr_2_url ? `<a href="${doc.icr_2_url}" target="_blank">ICR-2</a>` : '-'}</td>
+                </tr>
+            `;
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+            window.location.href = 'login.html';  // Redirect to login if not authenticated
+            return;
+        }
+
+        await loadSites();
+        document.getElementById('site-select').onchange = function() {
+            selectedSiteId = this.value;
+            loadDocuments(selectedSiteId);
+        };
+        document.getElementById('upload-btn').onclick = function() {
+            if (!selectedSiteId) {
+                alert('Please select a site first.');
+                return;
+            }
+            document.getElementById('upload-modal').style.display = 'flex';
+        };
+        document.getElementById('close-modal').onclick = function() {
+            document.getElementById('upload-modal').style.display = 'none';
+            document.getElementById('upload-form').reset();
+        };
+        
+        // In the onsubmit handler:
+        document.getElementById('upload-form').onsubmit = async function(e) {
+    e.preventDefault();
+    if (!selectedSiteId) {
+        alert('Please select a site first.');
+        return;
+    }
+    const form = e.target;
+    const files = {
+        boq_url: form.boq.files[0],
+        work_order_url: form.work_order.files[0],
+        icr_1_url: form.icr_1.files[0],
+        icr_2_url: form.icr_2.files[0]
+    };
+    let urls = {};
+
+    // Get the authenticated user's UID
+    const { data: { session } } = await supabase.auth.getSession();
+    const userId = session?.user?.id;
+
+    console.log('User ID:', userId); // Add this log
+    console.log('Selected Site ID:', selectedSiteId); // Add this log
+
+    if (!userId) {
+        alert('User not authenticated. Please log in.');
+        return;
+    }
+
+    for (const key in files) {
+                if (files[key]) {
+                    // CORRECTED LINE: Remove 'documents/' if you were including it implicitly or explicitly.
+                    // The 'from('documents')' already sets the bucket.
+                    // The path should be relative to the bucket's root.
+                    const uploadPath = `${userId}/${selectedSiteId}/${key}_${Date.now()}`;
+
+                    console.log(`Attempting to upload ${key} to path:`, uploadPath);
+                    const { data, error } = await supabase.storage
+                        .from('documents') // This already tells Supabase to use the 'documents' bucket
+                        .upload(uploadPath, files[key]);
+                    if (error) {
+                        console.error('Upload failed for ' + key + ':', error);
+                        alert('Upload failed for ' + key + ': ' + error.message);
+                        return;
+                    }
+                    console.log('Upload data object:', data); // Keep this log for verification
+
+                    // The data.path returned by upload should now be correct for getPublicUrl
+                    const { publicUrl } = supabase.storage.from('documents').getPublicUrl(data.path);
+                    urls[key] = publicUrl;
+                    console.log(`Successfully uploaded ${key}. Public URL:`, publicUrl);
+                }
+            }
+
+    console.log('URLs object before insert:', urls); // CRITICAL: Add this log
+
+    // Insert into documentation table with error handling
+    const { data: insertData, error: insertError } = await supabase.from('documentation').insert([{
+        site_id: selectedSiteId,
+        ...urls
+    }]);
+
+    if (insertError) {
+        console.error('Failed to save document URLs to database:', insertError); // More descriptive error log
+        alert('Failed to save document URLs: ' + insertError.message);
+        return;
+    }
+
+    console.log('Successfully inserted data into documentation table:', insertData); // Add this log
+
+    document.getElementById('upload-modal').style.display = 'none';
+    form.reset();
+    loadDocuments(selectedSiteId);
+};
+    });
+    </script>
+</head>
+<body>
+    <div class="doc-header">
+        <select id="site-select" class="site-select"></select>
+        <button id="upload-btn" class="upload-btn">Upload Documents</button>
+    </div>
+    <table id="docs-table" class="docs-table">
+        <thead>
+            <tr>
+                <th>Uploaded At</th>
+                <th>BOQ</th>
+                <th>Work Order</th>
+                <th>ICR-1</th>
+                <th>ICR-2</th>
+            </tr>
+        </thead>
+        <tbody>
+            </tbody>
+    </table>
+
+    <div class="modal" id="upload-modal">
+        <div class="modal-content">
+            <h3>Upload Documents</h3>
+            <form id="upload-form">
+                <label for="boq">Upload BOQ</label>
+                <input type="file" id="boq" name="boq" accept="application/pdf">
+                <label for="work_order">Upload Work Order</label>
+                <input type="file" id="work_order" name="work_order" accept="application/pdf">
+                <label for="icr_1">Upload ICR-1</label>
+                <input type="file" id="icr_1" name="icr_1" accept="application/pdf">
+                <label for="icr_2">Upload ICR-2</label>
+                <input type="file" id="icr_2" name="icr_2" accept="application/pdf">
+                <div class="modal-actions">
+                    <button type="button" id="close-modal" class="upload-btn" style="background:#aaa;">Cancel</button>
+                    <button type="submit" class="upload-btn">Upload</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Admin Dashboard - HS Priat Software</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #0d6efd;
+            --secondary-color: #6c757d;
+            --sidebar-bg: #2c3e50;
+            --body-bg: #f8f9fa;
+            --card-bg: #ffffff;
+            --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--body-bg);
+            display: flex;
+        }
+
+        .sidebar {
+            width: 260px;
+            background-color: var(--sidebar-bg);
+            color: white;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar .logo {
+            font-size: 1.6rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .sidebar .subtitle {
+            font-size: 0.9rem;
+            text-align: center;
+            margin-bottom: 30px;
+            color: #adb5bd;
+        }
+
+        .sidebar .menu a {
+            color: #dee2e6;
+            text-decoration: none;
+            padding: 12px 15px;
+            display: block;
+            border-radius: 5px;
+            margin-bottom: 8px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .sidebar .menu a i {
+            margin-right: 15px;
+            width: 20px;
+            text-align: center;
+        }
+
+        .sidebar .menu a:hover, .sidebar .menu a.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .main-content {
+            margin-left: 260px;
+            padding: 30px;
+            width: calc(100% - 260px);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 600;
+        }
+
+        .kpi-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .kpi-card {
+            background: linear-gradient(145deg, #ffffff, #e6e6e6);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 5px 5px 15px #d1d1d1, -5px -5px 15px #ffffff;
+            transition: all 0.3s ease-in-out;
+            border: 1px solid #ffffff;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 8px 8px 20px #c5c5c5, -8px -8px 20px #ffffff;
+        }
+
+        .kpi-title {
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--secondary-color);
+            margin-bottom: 15px;
+        }
+
+        .kpi-value {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+        }
+
+        .kpi-distribution {
+            font-size: 0.85rem;
+            color: #555;
+            border-top: 1px solid #e0e0e0;
+            padding-top: 10px;
+            margin-top: 15px;
+        }
+
+        .kpi-distribution div {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+
+        .comparison-table {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h1 class="logo">SMS Pro</h1>
+        <p class="subtitle">Site Management Suite</p>
+        <nav class="menu">
+            <a href="index.html" class="active"><i class="fa-solid fa-tachometer-alt"></i> <span>Dashboard</span></a>
+            <a href="site-details.html"><i class="fa-solid fa-plus"></i> <span>Create a Site</span></a>
+            <a href="boq-detail.html"><i class="fa-solid fa-list-check"></i> <span>Enter BOQ Details</span></a>
+            <a href="budget-details.html"><i class="fa-solid fa-coins"></i> <span>Enter Budget Details</span></a>
+            <a href="actual-details.html"><i class="fa-solid fa-chart-line"></i> <span>Enter Actual Details</span></a>
+            <a href="view-site.html"><i class="fa-solid fa-eye"></i> <span>View Sites</span></a>
+            <a href="documentation.html"><i class="fa-solid fa-book"></i> <span>Documentation</span></a>
+            <a href="expense-form.html"><i class="fa-solid fa-file-invoice-dollar"></i> <span>Expense Form</span></a>
+            <a href="expense-details.html"><i class="fa-solid fa-money-check-dollar"></i> <span>Expense Details</span></a>
+            <a href="site_completion_details.html"><i class="fa-solid fa-flag-checkered"></i> <span>Site Completion</span></a>
+            <a href="icr_1&_icr2_details.html"><i class="fa-solid fa-file-signature"></i> <span>ICR Details</span></a>
+            <a href="budget-detail.html"><i class="fa-solid fa-file-signature"></i> <span>Testing</span></a>
+        </nav>
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <h1>Admin Dashboard</h1>
+            <div>
+                <span>Welcome! <span id="admin-name">Admin</span></span>
+                <button id="logout-btn" class="btn btn-danger ms-3"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
+            </div>
+        </div>
+
+        <div class="kpi-cards">
+            <div class="kpi-card">
+                <div class="kpi-title">Total Sites</div>
+                <div class="kpi-value" id="kpi-total-sites">0</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-title">Completed Sites</div>
+                <div class="kpi-value" id="kpi-completed-sites">0</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-title">Ongoing Sites</div>
+                <div class="kpi-value" id="kpi-ongoing-sites">0</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-title">Total BOQ Amount</div>
+                <div class="kpi-value" id="kpi-total-boq">Rs0M</div>
+                <div class="kpi-distribution" id="kpi-boq-distribution">
+                    <div><span>Material:</span> <span>Rs0M</span></div>
+                    <div><span>Service:</span> <span>Rs0M</span></div>
+                </div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-title">Total Budget Amount</div>
+                <div class="kpi-value" id="kpi-total-budget-amount">Rs0M</div>
+                 <div class="kpi-distribution" id="kpi-budget-distribution">
+                    <div><span>Material:</span> <span>Rs0M</span></div>
+                    <div><span>Service:</span> <span>Rs0M</span></div>
+                </div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-title">Total Expense Amount</div>
+                <div class="kpi-value" id="kpi-total-expense-amount">Rs0M</div>
+                 <div class="kpi-distribution" id="kpi-expense-distribution">
+                    <div><span>Material:</span> <span>Rs0M</span></div>
+                    <div><span>Service:</span> <span>Rs0M</span></div>
+                </div>
+            </div>
+        </div>
+
+        <h2 class="mt-5">Site-wise Comparison</h2>
+        <div class="chart-container" style="position: relative; height:60vh; width:80vw">
+            <canvas id="site-comparison-chart"></canvas>
+        </div>
+        <div class="pagination-controls mt-3 text-center">
+            <button id="chart-prev-btn" class="btn btn-primary"><i class="fa-solid fa-arrow-left"></i> Previous</button>
+            <span id="chart-page-info" class="mx-3"></span>
+            <button id="chart-next-btn" class="btn btn-primary">Next <i class="fa-solid fa-arrow-right"></i></button>
+        </div>
+    </div>
+
+    <script>
+        const supabase = window.supabase.createClient(
+            'https://mxktarizsqttwwzbqgld.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im14a3Rhcml6c3F0dHd3emJxZ2xkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI2NDA3MTMsImV4cCI6MjA2ODIxNjcxM30.UKA9NjB8mlxYJjzaC0cMnPGREcEAf-NQ3AeRWNWeuP8'
+        );
+
+        async function loadKPIs() {
+            const { data: sites, error } = await supabase.from('site_details').select('*');
+            if (error) return;
+
+            document.getElementById('kpi-total-sites').textContent = sites.length;
+            document.getElementById('kpi-completed-sites').textContent = sites.filter(s => s.site_status && s.site_status.toLowerCase() === 'completed').length;
+            document.getElementById('kpi-ongoing-sites').textContent = sites.filter(s => s.site_status && s.site_status.toLowerCase() === 'ongoing').length;
+
+            const formatToMillions = (amount) => `Rs${(amount / 1000000).toFixed(2)}M`;
+
+            // --- BOQ KPI --- 
+            const { data: boqRows, error: boqError } = await supabase.from('boq_details').select('total, item_type');
+            if (!boqError && boqRows) {
+                let total = 0, material = 0, service = 0;
+                boqRows.forEach(r => {
+                    const amount = parseFloat(r.total) || 0;
+                    total += amount;
+                    if (r.item_type === 'Material') material += amount;
+                    else if (r.item_type === 'Service Charges') service += amount;
+                });
+                document.getElementById('kpi-total-boq').textContent = formatToMillions(total);
+                document.getElementById('kpi-boq-distribution').innerHTML = `
+                    <div><span>Material:</span> <span>${formatToMillions(material)}</span></div>
+                    <div><span>Service:</span> <span>${formatToMillions(service)}</span></div>
+                `;
+            }
+
+            // --- Budget KPI --- 
+            const { data: budgetRows, error: budgetError } = await supabase.from('budget_details').select('total, item_type');
+            if (!budgetError && budgetRows) {
+                let total = 0, material = 0, service = 0;
+                budgetRows.forEach(r => {
+                    const amount = parseFloat(r.total) || 0;
+                    total += amount;
+                    if (r.item_type === 'Material') material += amount;
+                    else if (r.item_type === 'Service Charges') service += amount;
+                });
+                document.getElementById('kpi-total-budget-amount').textContent = formatToMillions(total);
+                document.getElementById('kpi-budget-distribution').innerHTML = `
+                    <div><span>Material:</span> <span>${formatToMillions(material)}</span></div>
+                    <div><span>Service:</span> <span>${formatToMillions(service)}</span></div>
+                `;
+            }
+
+            // --- Expense KPI (Updated according to requirements) --- 
+            const { data: boqMaterialRows, error: boqMaterialError } = await supabase.from('boq_details').select('total').eq('item_type', 'Material');
+            const { data: expenseRows, error: expenseError } = await supabase.from('expense_entries').select('amount');
+
+            if (!boqMaterialError && !expenseError && boqMaterialRows && expenseRows) {
+                // Calculate Material total from boq_details
+                let materialFromBoq = 0;
+                boqMaterialRows.forEach(r => {
+                    materialFromBoq += parseFloat(r.total) || 0;
+                });
+                
+                // Calculate total from expense_entries (this represents Service expenses)
+                let serviceFromExpenses = 0;
+                expenseRows.forEach(r => {
+                    serviceFromExpenses += parseFloat(r.amount) || 0;
+                });
+                
+                // Total Expense = Material from BOQ + Service from expense_entries
+                const totalExpense = materialFromBoq + serviceFromExpenses;
+                
+                document.getElementById('kpi-total-expense-amount').textContent = formatToMillions(totalExpense);
+                document.getElementById('kpi-expense-distribution').innerHTML = `
+                    <div><span>Material:</span> <span>${formatToMillions(materialFromBoq)}</span></div>
+                    <div><span>Service:</span> <span>${formatToMillions(serviceFromExpenses)}</span></div>
+                `;
+            }
+        }
+
+        let siteComparisonChart = null;
+        let siteComparisonData = [];
+        let currentPage = 0;
+        const sitesPerPage = 5;
+
+        function renderSiteComparisonChart() {
+            const start = currentPage * sitesPerPage;
+            const end = start + sitesPerPage;
+            const paginatedData = siteComparisonData.slice(start, end);
+
+            const siteLabels = paginatedData.map(s => s.site_name);
+            const boqData = paginatedData.map(s => s.boq);
+            const budgetData = paginatedData.map(s => s.budget);
+            const expenseData = paginatedData.map(s => s.expense);
+
+            if (siteComparisonChart) {
+                siteComparisonChart.destroy();
+            }
+
+            const ctx = document.getElementById('site-comparison-chart').getContext('2d');
+            siteComparisonChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: siteLabels,
+                    datasets: [
+                        {
+                            label: 'BOQ Amount',
+                            data: boqData,
+                            backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Budget Amount',
+                            data: budgetData,
+                            backgroundColor: 'rgba(255, 206, 86, 0.6)',
+                            borderColor: 'rgba(255, 206, 86, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Expense Amount',
+                            data: expenseData,
+                            backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return 'Rs' + (value / 1000000).toFixed(1) + 'M';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            document.getElementById('chart-page-info').textContent = `Page ${currentPage + 1} of ${Math.ceil(siteComparisonData.length / sitesPerPage)}`;
+            document.getElementById('chart-prev-btn').disabled = currentPage === 0;
+            document.getElementById('chart-next-btn').disabled = end >= siteComparisonData.length;
+        }
+
+        async function loadSiteComparison() {
+            const { data: sites, error } = await supabase.from('site_details').select('id, site_name');
+            if (error || !sites) return;
+
+            const { data: boqRows } = await supabase.from('boq_details').select('site_id, total, item_type');
+            const { data: budgetRows } = await supabase.from('budget_details').select('site_id, total');
+            const { data: expenseRows } = await supabase.from('expense_entries').select('site_id, amount');
+
+            const sumBySite = (rows, key = 'total', filterType = null) => {
+                const map = {};
+                rows?.forEach(row => {
+                    if (!map[row.site_id]) map[row.site_id] = 0;
+                    
+                    if (filterType) {
+                        // Filter by item_type if specified
+                        if (row.item_type === filterType) {
+                            map[row.site_id] += parseFloat(row[key] || 0);
+                        }
+                    } else {
+                        // Sum all values
+                        map[row.site_id] += parseFloat(row[key] || 0);
+                    }
+                });
+                return map;
+            };
+            
+            // Calculate BOQ amounts by site
+            const boqMap = sumBySite(boqRows, 'total');
+            
+            // Calculate Budget amounts by site
+            const budgetMap = sumBySite(budgetRows, 'total');
+            
+            // Calculate Material from BOQ by site (for expense calculation)
+            const boqMaterialMap = sumBySite(boqRows, 'total', 'Material');
+            
+            // Calculate Service from expense_entries by site
+            const expenseServiceMap = sumBySite(expenseRows, 'amount');
+            
+            // Calculate total expense by site = Material from BOQ + Service from expense_entries
+            const expenseMap = {};
+            sites.forEach(site => {
+                const materialFromBoq = boqMaterialMap[site.id] || 0;
+                const serviceFromExpenses = expenseServiceMap[site.id] || 0;
+                expenseMap[site.id] = materialFromBoq + serviceFromExpenses;
+            });
+
+            siteComparisonData = sites.map(s => ({
+                site_name: s.site_name,
+                boq: boqMap[s.id] || 0,
+                budget: budgetMap[s.id] || 0,
+                expense: expenseMap[s.id] || 0
+            }));
+
+            renderSiteComparisonChart();
+        }
+
+        async function loadAdminName() {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                const name = user.user_metadata?.display_name || user.user_metadata?.full_name || user.email || 'Admin';
+                document.getElementById('admin-name').textContent = name;
+            } else {
+                 document.getElementById('admin-name').textContent = 'Admin';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadKPIs();
+            loadSiteComparison();
+            loadAdminName();
+
+            document.getElementById('chart-prev-btn').addEventListener('click', () => {
+                if (currentPage > 0) {
+                    currentPage--;
+                    renderSiteComparisonChart();
+                }
+            });
+
+            document.getElementById('chart-next-btn').addEventListener('click', () => {
+                if ((currentPage + 1) * sitesPerPage < siteComparisonData.length) {
+                    currentPage++;
+                    renderSiteComparisonChart();
+                }
+            });
+
+            document.getElementById('logout-btn').addEventListener('click', async () => {
+                await supabase.auth.signOut();
+                window.location.href = "login.html";
+            });
+        });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

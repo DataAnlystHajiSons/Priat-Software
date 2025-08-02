@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login - Field CRM</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet"/>
+  <style>
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(40px);}
+      to { opacity: 1; transform: translateY(0);}
+    }
+    .bg-white {
+      animation: fadeInUp 0.7s cubic-bezier(.39,.575,.565,1) both;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-blue-100 via-blue-300 to-blue-500 min-h-screen flex items-center justify-center">
+
+  <div class="bg-white bg-opacity-90 p-8 rounded-2xl shadow-2xl w-full max-w-sm flex flex-col items-center">
+    <div class="mb-6 flex flex-col items-center">
+      <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="User Login" class="w-16 h-16 mb-2 rounded-full shadow">
+      <h2 class="text-3xl font-extrabold text-blue-700 mb-1">Sign In</h2>
+      <p class="text-gray-500 text-sm">Welcome to Site Management System</p>
+    </div>
+    <div id="error-message" class="text-red-500 text-sm mb-4 hidden"></div>
+    <form id="login-form" class="space-y-5 w-full">
+      <div>
+        <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+        <input type="email" id="email" class="block w-full border border-gray-300 p-2 rounded focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition" placeholder="Enter your Email" required/>
+      </div>
+      <div>
+        <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+        <input type="password" id="password" class="block w-full border border-gray-300 p-2 rounded focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition" placeholder="Enter Password" required/>
+      </div>
+      <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg font-semibold hover:bg-blue-700 transition flex items-center justify-center gap-2">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+        </svg>
+        Login
+      </button>
+    </form>
+    <div class="mt-6 text-xs text-gray-400 text-center">
+      &copy; 2025 Site Management System. All rights reserved.
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script>
+  const SUPABASE_URL = 'https://mxktarizsqttwwzbqgld.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im14a3Rhcml6c3F0dHd3emJxZ2xkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI2NDA3MTMsImV4cCI6MjA2ODIxNjcxM30.UKA9NjB8mlxYJjzaC0cMnPGREcEAf-NQ3AeRWNWeuP8';
+  const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  const loginForm = document.getElementById('login-form');
+  const errorMessage = document.getElementById('error-message');
+
+  loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+
+    // Sign in the user
+    const { data, error } = await client.auth.signInWithPassword({
+      email,
+      password
+    });
+
+    if (error) {
+      errorMessage.textContent = error.message;
+      errorMessage.classList.remove('hidden');
+      return;
+    }
+
+    // Fetch user role from "users" table
+    const { data: userMeta, error: metaError } = await client
+      .from('users')
+      .select('role')
+      .eq('id', data.user.id)
+      .single();
+
+    if (metaError || !userMeta) {
+      errorMessage.textContent = 'User role not assigned. Contact admin.';
+      errorMessage.classList.remove('hidden');
+      return;
+    }
+
+    const role = userMeta.role;
+
+    // Redirect based on role
+    if (role === 'Admin') {
+      window.location.href = 'index.html';
+    } else if (role === 'Manager') {
+      window.location.href = 'manager-dashboard.html';
+    } else if (role === 'Field Staff') {
+      window.location.href = 'field-dashboard.html';
+    } else {
+      errorMessage.textContent = 'Unknown role. Contact administrator.';
+      errorMessage.classList.remove('hidden');
+    }
+  });
+</script>
+</body>
+</html>
